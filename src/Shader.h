@@ -12,8 +12,123 @@ struct Shader
 {
 	uint32_t program = 0;
 
+	// render shader ctor
+	Shader(const std::string& vertFile, const std::string& fragFile)
+	{
+		std::ifstream fVert(vertFile, std::ios::in);
+		assert(fVert.is_open());
+
+		std::stringstream vShaderStream;
+		vShaderStream << fVert.rdbuf();
+		fVert.close();
+
+		std::string vertexCode = vShaderStream.str();
+		const char* vertCode = vertexCode.c_str();
+
+
+		std::ifstream fFrag(fragFile);
+		assert(fFrag.is_open());
+
+		std::stringstream fShaderStream;
+		fShaderStream << fFrag.rdbuf();
+		fFrag.close();
+
+		std::string fragmentCode = fShaderStream.str();
+		const char* fragCode = fragmentCode.c_str();
+
+
+		int success;
+		char infoLog[512];
+
+		uint32_t shaderVert = glCreateShader(GL_VERTEX_SHADER);
+		glShaderSource(shaderVert, 1, &vertCode, nullptr);
+		glCompileShader(shaderVert);
+		glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shaderVert, 512, nullptr, infoLog);
+			std::cerr << "Vertex Shader Error: " << infoLog << std::endl;
+			assert(false);
+		}
+
+		uint32_t shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
+		glShaderSource(shaderFrag, 1, &fragCode, nullptr);
+		glCompileShader(shaderFrag);
+		glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shaderFrag, 512, nullptr, infoLog);
+			std::cerr << "Fragment Shader Error: " << infoLog << std::endl;
+			assert(false);
+		}
+
+
+		program = glCreateProgram();
+		glAttachShader(program, shaderVert);
+		glAttachShader(program, shaderFrag);
+		glLinkProgram(program);
+		glGetProgramiv(program, GL_LINK_STATUS, &success);
+		if (!success)
+		{
+			glGetProgramInfoLog(program, 512, nullptr, infoLog);
+			std::cerr << "Shader Linking Error: " << infoLog << std::endl;
+			assert(false);
+		}
+
+		glDeleteShader(shaderVert);
+		glDeleteShader(shaderFrag);
+	}
+
+	// compute shader ctor
+	Shader(const std::string& path)
+	{
+		std::ifstream file(path, std::ios::in);
+		assert(file.is_open());
+
+		std::stringstream vStream;
+		vStream << file.rdbuf();
+		file.close();
+
+		std::string codeStr = vStream.str();
+		const char* code = codeStr.c_str();
+
+
+		int success;
+		char infoLog[512];
+
+		uint32_t shader = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(shader, 1, &code, nullptr);
+		glCompileShader(shader);
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+			std::cerr << "Compute Shader Error: " << infoLog << std::endl;
+			assert(false);
+		}
+
+
+		program = glCreateProgram();
+		glAttachShader(program, shader);
+		glLinkProgram(program);
+		glGetProgramiv(program, GL_LINK_STATUS, &success);
+		if (!success)
+		{
+			glGetProgramInfoLog(program, 512, nullptr, infoLog);
+			std::cerr << "Shader Linking Error: " << infoLog << std::endl;
+			assert(false);
+		}
+
+		glDeleteShader(shader);
+	}
+
+	~Shader()
+	{
+		glDeleteProgram(program);
+	}
+
 	template <class T>
-	void setValue(const std::string& name, T value) const
+	inline void setValue(const std::string& name, T value) const
 	{
 		assert(false);
 	}
@@ -23,85 +138,6 @@ struct Shader
 		glUseProgram(program);
 	}
 };
-
-
-static Shader createShader(const std::string& vertFile, const std::string& fragFile)
-{
-	std::ifstream fVert(vertFile, std::ios::in);
-	assert(fVert.is_open());
-
-	std::stringstream vShaderStream;
-	vShaderStream << fVert.rdbuf();
-	fVert.close();
-
-	std::string vertexCode = vShaderStream.str();
-	const char* vertCode = vertexCode.c_str();
-
-
-	std::ifstream fFrag(fragFile);
-	assert(fFrag.is_open());
-
-	std::stringstream fShaderStream;
-	fShaderStream << fFrag.rdbuf();
-	fFrag.close();
-
-	std::string fragmentCode = fShaderStream.str();
-	const char* fragCode = fragmentCode.c_str();
-
-
-	int success;
-	char infoLog[512];
-
-	uint32_t shaderVert = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(shaderVert, 1, &vertCode, nullptr);
-	glCompileShader(shaderVert);
-	glGetShaderiv(shaderVert, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(shaderVert, 512, nullptr, infoLog);
-		std::cerr << "Vertex Shader Error: " << infoLog << std::endl;
-		assert(false);
-	}
-
-	uint32_t shaderFrag = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(shaderFrag, 1, &fragCode, nullptr);
-	glCompileShader(shaderFrag);
-	glGetShaderiv(shaderFrag, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(shaderFrag, 512, nullptr, infoLog);
-		std::cerr << "Fragment Shader Error: " << infoLog << std::endl;
-		assert(false);
-	}
-
-
-	uint32_t renderId = glCreateProgram();
-	glAttachShader(renderId, shaderVert);
-	glAttachShader(renderId, shaderFrag);
-	glLinkProgram(renderId);
-	glGetProgramiv(renderId, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(renderId, 512, nullptr, infoLog);
-		std::cerr << "Shader Linking Error: " << infoLog << std::endl;
-		assert(false);
-	}
-
-	glDeleteShader(shaderVert);
-	glDeleteShader(shaderFrag);
-
-
-	Shader shader;
-	shader.program = renderId;
-	return shader;
-}
-
-static void deleteShader(Shader* shader)
-{
-	assert(shader);
-	glDeleteProgram(shader->program);
-}
-
 
 template<> void Shader::setValue(const std::string& name, int val) const
 {

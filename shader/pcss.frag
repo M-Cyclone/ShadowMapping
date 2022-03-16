@@ -85,7 +85,7 @@ void getUniformSamples(const in vec2 randomSeed) // sample points in a circle
 float findBlocker(vec2 uv, float zReceiver)
 {
     // get a serials of random points
-    getPoissonSamples(uv);
+    getUniformSamples(uv);
 
 
     const float radius = 20.0;
@@ -106,7 +106,7 @@ float findBlocker(vec2 uv, float zReceiver)
         float zClosest = texture2D(DepthMap, this_uv).r;
 
         // if is blocked, use it
-        if(zClosest + bias < zReceiver)
+        if(zClosest < zReceiver + bias)
         {
             mean_block_depth += zClosest;
             ++block_count;
@@ -114,15 +114,13 @@ float findBlocker(vec2 uv, float zReceiver)
         }
     }
 
-    if(isBlocked == 1) return mean_block_depth / float(block_count);
-    else return 1.0;
+    return mean_block_depth / float(block_count);
 }
 
 float getPenumbraSize(float dReceiver, float dBlocker)
 {
     return light.lightWidth * max((dReceiver - dBlocker), 0.0) / dBlocker;
 }
-
 
 float PCF(vec3 texCoordShadow, float penumbraSize)
 {
@@ -146,7 +144,7 @@ float PCF(vec3 texCoordShadow, float penumbraSize)
         // in light space needs to larger than the depth in depth map(DM).
         // also, to avoid peter pan, the pixel's depth should be abviously largert than
         // the depth in DM, or in other world, zReceiver > zClosest + bias
-        visibility += (zClosest + bias < texCoordShadow.z) ? 0.0 : 1.0;
+        visibility += (zClosest + bias > texCoordShadow.z) ? 1.0 : 0.0;
     }
     return visibility / float(NUM_SAMPLES);
 
@@ -155,8 +153,6 @@ float PCF(vec3 texCoordShadow, float penumbraSize)
 
 float getVisibilityPCSS(vec3 texCoordShadow)
 {
-    if(texCoordShadow.z > 1.0) return 0.0;
-
     float mean_block_depth = findBlocker(texCoordShadow.xy, texCoordShadow.z);
     float penumbraSize = getPenumbraSize(texCoordShadow.z, mean_block_depth);
     return PCF(texCoordShadow, penumbraSize);
@@ -167,6 +163,7 @@ void main()
 {
 	vec3 shadowMapTexCoord = LightSpacePos.xyz / LightSpacePos.w;
 	shadowMapTexCoord = shadowMapTexCoord * 0.5 + 0.5;
+    //float visibility = PCF(shadowMapTexCoord, 20);
     float visibility = getVisibilityPCSS(shadowMapTexCoord);
 
 	FragColor = vec4(vec3(visibility), 1.0);

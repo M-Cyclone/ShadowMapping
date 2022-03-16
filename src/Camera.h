@@ -18,6 +18,12 @@ struct Camera
 	float zNear = 0.1f;
 	float zFar = 100.0f;
 
+	Camera(glm::vec3 pos, glm::vec3 targetPos)
+		: pos(pos)
+	{
+		Update(targetPos);
+	}
+
 	void Update(glm::vec3 targetPos)
 	{
 		dir = glm::normalize(targetPos - pos);
@@ -35,11 +41,3 @@ struct Camera
 		return glm::perspective(glm::radians(fov), aspectRatio, zNear, zFar);
 	}
 };
-
-Camera createCamera(glm::vec3 pos, glm::vec3 targetPos)
-{
-	Camera camera;
-	camera.pos = pos;
-	camera.Update(targetPos);
-	return camera;
-}

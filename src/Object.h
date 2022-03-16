@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <memory>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -27,6 +28,35 @@ struct Object
 
 	uint32_t count = 0;
 
+	Object() = default;
+	Object(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+		: count(static_cast<uint32_t>(indices.size()))
+	{
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, position)));
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, normal)));
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, texCoord)));
+		glEnableVertexAttribArray(2);
+
+		glGenBuffers(1, &ibo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
+	}
+
+	~Object()
+	{
+		glDeleteBuffers(1, &vbo);
+		glDeleteBuffers(1, &ibo);
+		glDeleteVertexArrays(1, &vao);
+	}
+
 	void bind() const
 	{
 		glBindVertexArray(vao);
@@ -41,45 +71,7 @@ struct Object
 	}
 };
 
-static Object createObject(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
-{
-	uint32_t vao = 0;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	uint32_t vbo = 0;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, position)));
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, normal)));
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, texCoord)));
-	glEnableVertexAttribArray(2);
-
-	uint32_t ibo = 0;
-	glGenBuffers(1, &ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indices.size(), indices.data(), GL_STATIC_DRAW);
-
-	Object obj;
-	obj.vao = vao;
-	obj.vbo = vbo;
-	obj.ibo = ibo;
-	obj.count = static_cast<uint32_t>(indices.size());
-	return obj;
-}
-
-static void deleteObject(Object* object)
-{
-	assert(object);
-	glDeleteBuffers(1, &object->vbo);
-	glDeleteBuffers(1, &object->ibo);
-	glDeleteVertexArrays(1, &object->vao);
-}
-
-static Object createPlane()
+static std::unique_ptr<Object> createPlane()
 {
 	static std::vector<Vertex> vertices =
 	{
@@ -95,10 +87,10 @@ static Object createPlane()
 		0, 2, 3
 	};
 
-	return createObject(vertices, indices);
+	return std::make_unique<Object>(vertices, indices);
 }
 
-static Object createBox()
+static std::unique_ptr<Object> createBox()
 {
 	static std::vector<Vertex> vertices =
 	{
@@ -157,5 +149,5 @@ static Object createBox()
 		22, 23, 20
 	};
 
-	return createObject(vertices, indices);
+	return std::make_unique<Object>(vertices, indices);
 }

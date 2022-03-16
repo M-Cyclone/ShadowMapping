@@ -15,6 +15,15 @@ struct DirectionalLight
 
 	float lightWidth = 50.0f;
 
+	DirectionalLight(glm::vec3 pos, glm::vec3 targetPos, float halfWidth, float halfHeight, float zNear, float zFar)
+		: pos(pos)
+		, targetPos(targetPos)
+		, halfWidth(halfWidth)
+		, halfHeight(halfHeight)
+		, zNear(zNear)
+		, zFar(zFar)
+	{}
+
 	glm::mat4 getProj() const
 	{
 		return glm::ortho(-halfWidth, halfWidth, -halfHeight, halfHeight, zNear, zFar);
@@ -25,16 +34,3 @@ struct DirectionalLight
 		return glm::lookAt(pos, targetPos, { 0.0f, 1.0f, 0.0f });
 	}
 };
-
-static DirectionalLight createDLight(glm::vec3 pos, glm::vec3 targetPos, float halfWidth, float halfHeight, float zNear, float zFar)
-{
-	DirectionalLight light;
-	light.pos = pos;
-	light.targetPos = targetPos;
-	light.halfWidth = halfWidth;
-	light.halfHeight = halfHeight;
-	light.zNear = zNear;
-	light.zFar = zFar;
-
-	return light;
-}

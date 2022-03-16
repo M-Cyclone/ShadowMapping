@@ -16,6 +16,27 @@ struct Framebuffer
 
 	uint32_t depthBuffer = 0;
 
+	Framebuffer(uint32_t width, uint32_t height)
+		: width(width)
+		, height(height)
+	{
+		glGenFramebuffers(1, &fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+		glGenRenderbuffers(1, &depthBuffer);
+		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	~Framebuffer()
+	{
+		glDeleteRenderbuffers(1, &depthBuffer);
+		glDeleteFramebuffers(1, &fbo);
+	}
+
 	void begin() const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -28,34 +49,3 @@ struct Framebuffer
 		glViewport(0, 0, kScreenWidth, kScreenHeight);
 	}
 };
-
-static Framebuffer createFramebuffer(uint32_t width, uint32_t height)
-{
-	uint32_t fbo = 0;
-	glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-	uint32_t depthBuffer = 0;
-	glGenRenderbuffers(1, &depthBuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	Framebuffer framebuffer;
-	framebuffer.fbo = fbo;
-	framebuffer.width = width;
-	framebuffer.height = height;
-	framebuffer.depthBuffer = depthBuffer;
-	return framebuffer;
-}
-
-static void deleteFramebuffer(Framebuffer* framebuffer)
-{
-	assert(framebuffer);
-
-	glDeleteRenderbuffers(1, &framebuffer->depthBuffer);
-
-	glDeleteFramebuffers(1, &framebuffer->fbo);
-}
